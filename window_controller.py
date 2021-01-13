@@ -1,32 +1,19 @@
 print("main window controller")
-try:
-    import sys
-    import time
-    import numpy as np
-    import cmath
-    from interface import Ui_MainWindow
-    from PyQt5 import QtWidgets, QtCore
-    from PyQt5.QtWidgets import (QLabel, QRadioButton,
-                                 QPushButton, QVBoxLayout,
-                                 QApplication, QWidget,
-                                 QButtonGroup)
+import numpy as np
+import cmath
+from interface import Ui_MainWindow
+from PyQt5 import QtWidgets, QtCore
 
-    import pandas as pd
-    from pandas import ExcelWriter
-    from pandas import ExcelFile
-#    from core import *
-except Exception as err:
-    print(err)
-    input()
-    exit(1)
+import pandas as pd
+from pandas import ExcelWriter
 
 
-#CytoCore = Cytometr_core()
+
 e = 4.8 * 10 ** (-10)
 c = 2.998 * 10 ** (10)
 m_e = 9.1 * 10 ** (-28)
 
-        # Users constants
+# Users constants
 N = 10 ** 17 * 10 ** 22  # cm^-3
 M = 1 * 9.1 * 10 ** (-28)  # mass of charge carriers in mass of free electrons
 eps_inf = 10  # (1 - 100)
@@ -41,6 +28,15 @@ class mainWindowController(QtWidgets.QDialog, Ui_MainWindow):
         super(mainWindowController, self).__init__(parent)
         self.setupUi(self)
         self.calculate_pushButton.clicked.connect(self.calculateButtonClicked)
+        self.N_doubleSpinBox.valueChanged.connect(self.calculateButtonClicked)
+        self.M_doubleSpinBox_2.valueChanged.connect(self.calculateButtonClicked)
+        self.W_TO_doubleSpinBox_3.valueChanged.connect(self.calculateButtonClicked)
+        self.W_LO_doubleSpinBox.valueChanged.connect(self.calculateButtonClicked)
+        self.G_0_doubleSpinBox.valueChanged.connect(self.calculateButtonClicked)
+        self.G_1_doubleSpinBox.valueChanged.connect(self.calculateButtonClicked)
+        self.Eps_inf_doubleSpinBox.valueChanged.connect(self.calculateButtonClicked)
+        self.d_doubleSpinBox.valueChanged.connect(self.calculateButtonClicked)
+
         self.save_pushButton.clicked.connect(self.saveButtonClicked)
         self.eps_total_radioButton.toggled.connect(self.onClicked)
         self.im_eps_total_radioButton.toggled.connect(self.onClicked)
@@ -68,7 +64,7 @@ class mainWindowController(QtWidgets.QDialog, Ui_MainWindow):
 
         self.N_doubleSpinBox.setValue(300)
 
-        self.w = [i for i in range(100, 400)]
+        self._w = [i for i in range(100, 400)]
         w = [i for i in range(100, 400)]
         self.Omega_P = self._plasmon_freq()
         self.Re_eps_total_list = [np.real(self.eps_total(_w=i)) for i in w]
@@ -80,7 +76,7 @@ class mainWindowController(QtWidgets.QDialog, Ui_MainWindow):
         self.alpha_w_list = [self.alpha_W(i) for i in w]
         self.T_w_list = [self.T_w(i) for i in w]
         self.A_w_list = [self.A_w(i) for i in w]
-
+        self.showPlasmFreq_label.setText(str(self.Omega_P))
 
         '''
         self.rbtngroup = QButtonGroup()
@@ -131,31 +127,31 @@ class mainWindowController(QtWidgets.QDialog, Ui_MainWindow):
     def drawPlot(self):
         self.widget.clear()
         if (self.eps_total_radioButton.isChecked()):
-            self.widget.plot(self.w, self.Re_eps_total_list, pen ='r')
+            self.widget.plot(self._w, self.Re_eps_total_list, pen ='r')
 
         if (self.im_eps_total_radioButton.isChecked()):
-            self.widget.plot(self.w, self.Im_eps_total_list, pen ='r')
+            self.widget.plot(self._w, self.Im_eps_total_list, pen ='r')
 
         if (self.N_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.n_w_list, pen ='r')
+            self.widget.plot(self._w, self.n_w_list, pen ='r')
 
         if (self.K_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.k_w_list, pen ='r')
+            self.widget.plot(self._w, self.k_w_list, pen ='r')
 
         if (self.R_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.R_w_list, pen ='r')
+            self.widget.plot(self._w, self.R_w_list, pen ='r')
 
         if (self.phi_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.phi_w_list, pen ='r')
+            self.widget.plot(self._w, self.phi_w_list, pen ='r')
 
         if (self.alpha_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.alpha_w_list, pen ='r')
+            self.widget.plot(self._w, self.alpha_w_list, pen ='r')
 
         if (self.T_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.T_w_list, pen ='r')
+            self.widget.plot(self._w, self.T_w_list, pen ='r')
 
         if (self.A_w_radioButton.isChecked()):
-            self.widget.plot(self.w, self.A_w_list, pen ='r')
+            self.widget.plot(self._w, self.A_w_list, pen ='r')
 
     @QtCore.pyqtSlot()
     def calculateButtonClicked(self):
@@ -169,15 +165,16 @@ class mainWindowController(QtWidgets.QDialog, Ui_MainWindow):
         self.d = self.d_doubleSpinBox.value() * 10 ** (-7) # film thinkness, 0 - 10^-3 cm^-1
 
         self.Omega_P = self._plasmon_freq()
-        self.Re_eps_total_list = [np.real(self.eps_total(_w=i)) for i in self.w]
-        self.Im_eps_total_list = [np.imag(self.eps_total(_w=i)) for i in self.w]
-        self.n_w_list = [np.real(self.N_w(i)) for i in self.w]
-        self.k_w_list = [np.imag(self.N_w(i)) for i in self.w]
-        self.R_w_list = [self.R_w(i) for i in self.w]
-        self.phi_w_list = [self.phi_w(i) for i in self.w]
-        self.alpha_w_list = [self.alpha_W(i) for i in self.w]
-        self.T_w_list = [self.T_w(i) for i in self.w]
-        self.A_w_list = [self.A_w(i) for i in self.w]
+        self.Re_eps_total_list = [np.real(self.eps_total(_w=i)) for i in self._w]
+        self.Im_eps_total_list = [np.imag(self.eps_total(_w=i)) for i in self._w]
+        self.n_w_list = [np.real(self.N_w(i)) for i in self._w]
+        self.k_w_list = [np.imag(self.N_w(i)) for i in self._w]
+        self.R_w_list = [self.R_w(i) for i in self._w]
+        self.phi_w_list = [self.phi_w(i) for i in self._w]
+        self.alpha_w_list = [self.alpha_W(i) for i in self._w]
+        self.T_w_list = [self.T_w(i) for i in self._w]
+        self.A_w_list = [self.A_w(i) for i in self._w]
+        self.showPlasmFreq_label.setText(str(self.Omega_P))
         print("calculated")
         self.drawPlot()
         return 0
@@ -187,39 +184,39 @@ class mainWindowController(QtWidgets.QDialog, Ui_MainWindow):
         df = pd.DataFrame({'a': [1, 3, 5, 7, 4, 5, 6, 4, 7, 8, 9],
                            'b': [3, 5, 6, 2, 4, 6, 7, 8, 7, 8, 9]})
         if (self.eps_total_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                're(eps_total)': self.Re_eps_total_list})
 
         if (self.im_eps_total_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'im(eps_total)': self.Im_eps_total_list})
 
         if (self.N_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'n(w)': self.n_w_list})
 
         if (self.K_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'k(w)': self.k_w_list})
 
         if (self.R_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'R(w)': self.R_w_list})
 
         if (self.phi_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'phi(w)': self.phi_w_list})
 
         if (self.alpha_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'alpha(w)': self.alpha_w_list})
 
         if (self.T_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'T(w)': self.T_w_list})
 
         if (self.A_w_radioButton.isChecked()):
-            df = pd.DataFrame({'w': self.w,
+            df = pd.DataFrame({'w': self._w,
                                'A(w)': self.A_w_list})
 
         writer = ExcelWriter('plotData.xlsx')
